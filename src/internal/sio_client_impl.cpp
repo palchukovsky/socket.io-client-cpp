@@ -376,18 +376,23 @@ namespace sio
         m_con_state = con_closed;
         this->sockets_invoke_void(&sio::socket::on_disconnect);
         LOG("Connection failed." << endl);
-        if(m_reconn_made<m_reconn_attempts)
+        bool isReconnectScheduled = m_reconn_made < m_reconn_attempts;
+        if (isReconnectScheduled)
         {
             LOG("Reconnect for attempt:"<<m_reconn_made<<endl);
             unsigned delay = this->next_delay();
-            if(m_reconnect_listener) m_reconnect_listener(m_reconn_made,delay);
-            m_reconn_timer.reset(new boost::asio::deadline_timer(m_client.get_io_service()));
-            boost::system::error_code ec;
-            m_reconn_timer->expires_from_now(milliseconds(delay), ec);
-            m_reconn_timer->async_wait(lib::bind(&client_impl::timeout_reconnect,this,lib::placeholders::_1));
+            if (m_reconnect_listener) {
+                isReconnectScheduled
+                   = m_reconnect_listener(m_reconn_made,delay);
+            }
+            if (isReconnectScheduled) {
+                m_reconn_timer.reset(new boost::asio::deadline_timer(m_client.get_io_service()));
+                boost::system::error_code ec;
+                m_reconn_timer->expires_from_now(milliseconds(delay), ec);
+                m_reconn_timer->async_wait(lib::bind(&client_impl::timeout_reconnect,this,lib::placeholders::_1));
+            }
         }
-        else
-        {
+        if (!isReconnectScheduled) {
             if(m_fail_listener)m_fail_listener();
         }
     }

@@ -27,7 +27,8 @@ namespace sio
         
         typedef std::function<void(close_reason const& reason)> close_listener;
 
-        typedef std::function<void(unsigned, unsigned)> reconnect_listener;
+        /// Returns false if wants to stop reconnection attempts. True otherwise.
+        typedef std::function<bool(unsigned, unsigned)> reconnect_listener;
         
         typedef std::function<void(std::string const& nsp)> socket_listener;
         
